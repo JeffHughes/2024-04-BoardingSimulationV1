@@ -10,6 +10,9 @@ export class Passenger {
     boardingOrder?: number;
     hasCarryOn?: boolean;
 
+    seat?: string;
+    row?: number;
+
     constructor(id: number) {
         this.id = id;
     }

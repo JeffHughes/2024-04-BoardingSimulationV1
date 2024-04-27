@@ -24,8 +24,6 @@ export class OverheadBinsService {
   IRL, the bin distribution would be based on a totally different set of factors
   */
   assignPassengerBins(passengers: Passenger[], groups: Group[], totalBins: number, slotsPerBin: number = 12): Passenger[] {
-    // const totalSlots = totalBins * slotsPerBin;
-    // const slotsToFill = Math.floor(totalSlots * 0.95); // 95% fill rate
 
     //make a dictionary of bins and the bin's slots
     let bins: any = {};
@@ -33,7 +31,7 @@ export class OverheadBinsService {
       bins[bin] = [];
     }
 
-    groups.sort((a, b) => a.maxSize - b.maxSize);
+    groups.sort((a, b) => b.maxSize - a.maxSize);
 
     // groups.sort((a: any, b: any) => {
     //   // Compare the maxSize properties randomly
@@ -49,7 +47,6 @@ export class OverheadBinsService {
 
     // starting w bin 12 assign 1 group per bin, when you get to 1 go back to 12
     // there's an advantage to loading big groups on the back of the plane
-
 
     let currentBin = totalBins;
     let currentSlotIndex = 1;
@@ -71,6 +68,41 @@ export class OverheadBinsService {
         }
       });
     }
+
+
+    let slotsFilled = passengers.filter(p => p.slot).length || 0;
+    const totalSlots = totalBins * slotsPerBin;
+    const totalSlotsToFill = Math.floor(totalSlots * 0.95) || 0; // 95% fill rate
+    const slotsToFill = totalSlotsToFill - slotsFilled;
+
+    let remaining = passengers.filter(p => !p.slot && !p.bin);
+
+    if (remaining && remaining.length > slotsToFill) {
+      remaining = remaining.slice(0, slotsToFill);
+
+      // fill in w singles
+      // look at all the bins one at a time, add singles until 12
+      // then move to the next bin 
+      for (let bin = 1; bin <= totalBins; bin++) {
+        let binSlots = bins[bin].length;
+        while (binSlots < slotsPerBin) {
+          let passenger = remaining.find(p => !p.slot && !p.bin);
+          if (passenger) {
+            passenger.bin = bin;
+            passenger.slot = binSlots++;
+            passenger.hasCarryOn = true;
+            bins[bin].push({ passenger });
+          } else {
+            break;
+          }
+        }
+      }
+
+    }
+
+
+
+
 
     passengers.forEach((passenger: any) => {
 

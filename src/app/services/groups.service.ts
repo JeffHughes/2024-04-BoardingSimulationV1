@@ -28,16 +28,14 @@ export class GroupsService {
 
     const groupDistribution: { size: number, count: number }[] = this.generateGroupDistribution(passengers.length, 6);
     console.log({ groupDistribution })
-
-    // Generate groups based on the distribution
+   
     let groups: Group[] = [];
     groupDistribution.forEach(distribution => {
       for (let i = 0; i < distribution.count; i++) {
         groups.push({ members: [], maxSize: distribution.size });
       }
     });
-
-    // Assign passengers to groups 
+ 
     let passengerIds = Array.from({ length: passengers.length }, (_, i) => i + 1);
 
     // Shuffle array to randomize passenger assignment (optional)
@@ -54,9 +52,8 @@ export class GroupsService {
         group.members.push(passengerId);
       }
     });
-
-    // Output the groups for verification
-    if (log)
+ 
+    if (log)  // Output the groups for verification
       groups.forEach((group, index) => {
         console.log(`Group ${index + 1} ${group.maxSize} member(s): [${group.members.join(', ')}]`);
       });

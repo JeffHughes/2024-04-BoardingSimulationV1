@@ -41,7 +41,7 @@ export class PassengersService {
 
     const groupInfo = this.groupService.distributePassengersIntoGroups(passengersBinAssigned, false, false);
     console.log({ groupInfo })
- 
+
     passengersBinAssigned = this.overheadBinService.assignPassengerBins(
       groupInfo.passengers,
       groupInfo.groups,
@@ -50,6 +50,11 @@ export class PassengersService {
     //console.log({ passengersBinAssigned })
 
     const gateAssignments = this.gateService.assignBoardingGroups(passengersBinAssigned);
+
+    
+    const seats = this.seatService.assignSeatsToPassengers(gateAssignments);
+
+    console.log({ seats })
     // console.log({ gateAssignments })
 
     // passengers = this.seatService.sortBySlot([...passengers], config.seatRows);

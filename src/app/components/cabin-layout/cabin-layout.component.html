@@ -35,7 +35,7 @@
 
 <table style="width: 100%">
   <tr>
-    @for (order of configService.cabinPathway()  ; track $index) {
+    @for (order of configService.cabinPathway().reverse()  ; track $index) {
     <td
       [id]="getID(order)"
       style="
