@@ -1,0 +1,10 @@
+{
+  "maxPassengers" : 143,
+
+  "seatRows": 26,
+  "overheadBinRows": 16,
+  "cabinLengthMeters": 30,
+
+  "gateRows" : 16,
+  "gateColumns" : 8 
+}

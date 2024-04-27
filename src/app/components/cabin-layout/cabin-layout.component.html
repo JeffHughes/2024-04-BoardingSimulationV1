@@ -1,0 +1,88 @@
+<table style="width: 100%">
+  @for (letter of configService.getABCRows(); track $index) {
+  <tr>
+    @for (row of configService.seatRows( )    ; track $index) {
+    <td
+      [id]="configService.seatID(row, letter)"
+      [ngStyle]="configService.seatStyle()"
+    >
+      {{ row }}{{ letter }}
+    </td>
+    }
+    <td></td>
+  </tr>
+  }
+</table>
+
+ <table style="width: 100%">
+  <tr>
+    @for (order of configService.overheadBins()  ; track $index) {
+    <td
+      [id]="getID(order)"
+      style="
+        border: 1px solid black;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        vertical-align: middle;
+      "
+    >
+      {{ order }}
+    </td>
+    }
+  </tr>
+</table>
+
+<table style="width: 100%">
+  <tr>
+    @for (order of configService.cabinPathway()  ; track $index) {
+    <td
+      [id]="getID(order)"
+      style="
+        border: 1px solid black;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        vertical-align: middle;
+      "
+    >
+      {{ order }}
+    </td>
+    }
+  </tr>
+</table>
+
+<table style="width: 100%">
+  <tr>
+    @for (order of configService.overheadBins()  ; track $index) {
+    <td
+      [id]="getID(order)"
+      style="
+        border: 1px solid black;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        vertical-align: middle;
+      "
+    >
+      {{ order }}
+    </td>
+    }
+  </tr>
+</table>
+
+<table style="width: 100%">
+  @for (letter of configService.getDEFRows(); track $index) {
+  <tr>
+    @for (row of configService.seatRows( )   ; track $index) {
+    <td
+      [id]="configService.seatID(row, letter)"
+      [ngStyle]="configService.seatStyle()"
+    >
+      {{ row }}{{ letter }}
+    </td>
+    }
+    <td></td>
+  </tr>
+  }
+</table>    

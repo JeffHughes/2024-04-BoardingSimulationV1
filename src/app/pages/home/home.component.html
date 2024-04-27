@@ -1,0 +1,30 @@
+<div style="display: flex; flex-direction: column">
+  <div style="display: flex; justify-content: space-between">
+    <div>
+      Now Boarding: Group A<br />
+      On Deck: Group B
+    </div>
+    <div>Time: 00:00</div>
+  </div>
+
+  <div style="position: relative; width: 100%">
+    <div style="position: absolute; width: 100%">
+      <app-gate-layout />
+    </div>
+    <div
+      style="
+        position: absolute;
+        width: 100vw;
+        height: 100%;
+        top: -150px;
+        left: -25px;
+      "
+    >
+      <app-passengers-at-gate />
+    </div>
+  </div>
+
+  <div style="margin-top: 150px"><app-walkway /></div>
+
+  <div style="margin-top: 20px"><app-cabin-layout /></div>
+</div>

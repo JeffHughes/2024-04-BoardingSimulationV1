@@ -1,0 +1,23 @@
+@for (passenger of passengersService.passengers(); track $index) {
+
+<div
+  style="
+    position: absolute;
+    width: 20px;
+
+    top: 100px;
+    aspect-ratio: 1;
+    border-radius: 100%;
+    background-color: rgb(233, 233, 233);
+    border: 1px solid black;
+
+    text-align: center;
+    vertical-align: center;
+  "
+  [id]="'passenger-' + passenger.id"
+>
+  {{ passenger.id }}
+</div>
+}
+<!-- [style.left.px]="100 + passenger.id * 10"
+  [style.top.px]="-100" -->
