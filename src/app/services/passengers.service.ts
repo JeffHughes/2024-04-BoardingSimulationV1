@@ -41,13 +41,13 @@ export class PassengersService {
 
     const groupInfo = this.groupService.distributePassengersIntoGroups(passengersBinAssigned, false, false);
     console.log({ groupInfo })
-
+ 
     passengersBinAssigned = this.overheadBinService.assignPassengerBins(
       groupInfo.passengers,
       groupInfo.groups,
       config.overheadBinRows, 12);
 
-    console.log({ passengersBinAssigned })
+    //console.log({ passengersBinAssigned })
 
     const gateAssignments = this.gateService.assignBoardingGroups(passengersBinAssigned);
     // console.log({ gateAssignments })
