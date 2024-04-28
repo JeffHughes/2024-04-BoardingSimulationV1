@@ -16,12 +16,12 @@ export class GateService {
 
     // Sort passengers by bin, slot, and numeric boarding group
     passengers.sort((a: any, b: any) => {
-      return key(a).localeCompare(key(b)); 
+      return key(a).localeCompare(key(b));
     });
 
     // const sortedPassengers = JSON.parse(JSON.stringify(passengers));
     // console.log('Sorted Passengers:', sortedPassengers)
- 
+
     const boardingGroups: Record<string, Passenger[]> = {};
 
     let currentBoardingGroup = 1;
@@ -33,6 +33,26 @@ export class GateService {
     // const baglessBeforeCarryOns = [...bagless];
     // console.log('Bagless (before assignment):', baglessBeforeCarryOns)
 
+    function assignBoardingGroup(group: Passenger[]) {
+      group.forEach(groupPassenger => {
+        groupPassenger.boardingGroup = currentBoardingGroup;
+        groupPassenger.boardingOrder = currentBoardingGroupBin;
+      });
+
+      const BGPosition = `${pad(currentBoardingGroup)}-${pad(currentBoardingGroupBin)}`;
+      boardingGroups[BGPosition] = group;
+      advanceBoardingGroupBin();
+    }
+
+    function advanceBoardingGroupBin() {
+      currentBoardingGroupBin++;
+      if (currentBoardingGroupBin > 12) {
+        currentBoardingGroup++;
+        currentBoardingGroupBin = 1;
+      }
+    }
+    
+
     bagless.forEach((passenger, index) => {
       let group = passengers.filter(p => p.groupID === passenger.groupID);
       if (group.length == group.filter(p => !p.hasCarryOn).length) {
@@ -42,7 +62,7 @@ export class GateService {
 
     // const baglessAfterCarryOns = [...bagless];
     // console.log('Bagless (after assignment):', baglessAfterCarryOns)
- 
+
     let passengersNeedBoardingGroup = passengers.filter(p => !p.boardingGroup);
     let periodicDisplayCounter = 501;  // also a backup if we get stuck in a loop
     while (passengersNeedBoardingGroup.length > 0 && periodicDisplayCounter-- > 0) {
@@ -75,28 +95,11 @@ export class GateService {
         passenger.boardingGroupLetter = String.fromCharCode('A'.charCodeAt(0) + passenger.boardingGroup! - 1);
     });
 
-    this.consoleService.printBoardingGroupTable(passengers);
+    // this.consoleService.printBoardingGroupTable(passengers);
 
     return passengers;
 
-    function assignBoardingGroup(group: Passenger[]) {
-      group.forEach(groupPassenger => {
-        groupPassenger.boardingGroup = currentBoardingGroup;
-        groupPassenger.boardingOrder = currentBoardingGroupBin;
-      });
-
-      const BGPosition = `${pad(currentBoardingGroup)}-${pad(currentBoardingGroupBin)}`;
-      boardingGroups[BGPosition] = group;
-      advanceBoardingGroupBin();
-    }
-
-    function advanceBoardingGroupBin() {
-      currentBoardingGroupBin++;
-      if (currentBoardingGroupBin > 12) {
-        currentBoardingGroup++;
-        currentBoardingGroupBin = 1;
-      }
-    }
+   
 
 
   }

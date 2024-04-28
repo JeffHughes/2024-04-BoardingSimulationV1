@@ -82,122 +82,111 @@ export class SeatService {
             });
         });
 
-            
-            let availableSeats: Seat[] = [];
-            this.seatLayout.forEach(row => {
-                row.forEach(seat => {
-                    if (!seat.isOccupied) {
-                        availableSeats.push(seat);
-                    }
-                });
-            });
 
-            // Final pass to ensure every passenger has a seat using the list of available seats
-            passengers.forEach(passenger => {
-                if (!passenger.seat) {
-                    if (availableSeats.length > 0) {
-                        const seat = availableSeats.shift()!; // Take the first available seat
-                        seat.isOccupied = true;
-                        seat.passengerId = passenger.id;
-                        seat.groupID = passenger.groupID;
-
-                        passenger.seat = seat.seat;
-                        passenger.row = seat.row;
-                        passenger.seatRow = `${seat.row}${seat.seat}`;
-                    } else {
-                        console.error(`No available seats left for passenger ID: ${passenger.id}`);
-                    }
+        let availableSeats: Seat[] = [];
+        this.seatLayout.forEach(row => {
+            row.forEach(seat => {
+                if (!seat.isOccupied) {
+                    availableSeats.push(seat);
                 }
             });
+        });
 
-            return passengers;
+        // Final pass to ensure every passenger has a seat using the list of available seats
+        passengers.forEach(passenger => {
+            if (!passenger.seat) {
+                if (availableSeats.length > 0) {
+                    const seat = availableSeats.shift()!; // Take the first available seat
+                    seat.isOccupied = true;
+                    seat.passengerId = passenger.id;
+                    seat.groupID = passenger.groupID;
+
+                    passenger.seat = seat.seat;
+                    passenger.row = seat.row;
+                    passenger.seatRow = `${seat.row}${seat.seat}`;
+                } else {
+                    console.error(`No available seats left for passenger ID: ${passenger.id}`);
+                }
+            }
+        });
+
+        return passengers;
     }
 
 
 
-    public findClosestAvailableSeat(bin: number, slot: number, groupSize: number): Seat[] {
+    findClosestAvailableSeat(bin: number, slot: number, groupSize: number): Seat[] {
 
         const totalBins = 12; // TODO: make this a variable
+        const maxRowOffset = 6; // Maximum number of rows to search up or down
+
         // First, we convert the bin to the actual row number
         let invertBin = totalBins + 1 - bin; // Since bin numbers are reverse-ordered
+        let targetRow = invertBin * 2 - 1; // Each bin corresponds to 2 rows
 
-        let targetRow = invertBin * 2; // Each bin corresponds to 2 rows
-        // TODO: figureout the actual ratio of bins to seats 
+        // Define preferred seat blocks for different group sizes
+        const seatBlocks = groupSize === 2 ? [['A', 'B'], ['B', 'C'], ['D', 'E'], ['E', 'F']] :
+            groupSize === 3 ? [['A', 'B', 'C'], ['D', 'E', 'F']] :
+                groupSize === 4 ? [['A', 'B', 'C', 'D'], ['B', 'C', 'D', 'E'], ['C', 'D', 'E', 'F']] :
+                    groupSize === 5 ? [['A', 'B', 'C', 'D', 'E'], ['B', 'C', 'D', 'E', 'F']] :
+                        groupSize === 6 ? [['A', 'B', 'C', 'D', 'E', 'F']] : [['A'], ['F'], ['C'], ['D'], ['B'], ['E']]; // Default to single seats if no specific block matches
 
-        const seatPreference = slot >= 7 ?
-            ['F', 'A', 'D', 'E', 'E', 'B'] :
-            ['A', 'F', 'C', 'D', 'B', 'E'];
 
-        // if there are 6 members in the group
-        // we'll take ABCDEF, or ABC, ABC 2 rows, or  DEF, DEF as a first choice  
-        // 
-        // if there are 2 members in the group 
-        // AB, BC, DE, or EF are preferred
-        // 
-        // If there are 3 members ABC or DEF 
-        // 
-        // 4 members: ABC D, BC DE, or CDEF
-        // 
-        // 5 members: ABC DE, or BC DEF, or AB ABC, or DE DEF or BC ABC or EF DEF 
-        // 
-        // if you can't find one of the first choices, check the next row back before giving up
-
-        if (bin == 0) {
-            targetRow = 1;
-        }
-
-        const getSeatsByPreference = (row: number): Seat[] => {
+        // Define a function to find seats by the preferred blocks
+        const getSeatsByPreference = (row: number, preferences: string[]): Seat[] => {
+            if (row < 0 || row >= this.seatLayout.length) return []; // Guard against invalid row index
             let availableSeats: Seat[] = [];
-            for (let seatLetter of seatPreference) {
-                let seat = this.seatLayout[row]?.find(s => s.seat === seatLetter && !s.isOccupied);
-                if (seat) availableSeats.push(seat);
+            for (let seatLetter of preferences) {
+                let seatIndex = this.seatLayout[row].findIndex(s => s.seat === seatLetter);
+                if (seatIndex !== -1 && !this.seatLayout[row][seatIndex].isOccupied) {
+                    availableSeats.push(this.seatLayout[row][seatIndex]);
+                }
             }
             return availableSeats;
         };
 
         let assignedSeats: Seat[] = [];
         let rowOffset = 0;
-        let foundSeats = false;
 
+        // Try to find seats according to preference for the group size
+        while (rowOffset <= maxRowOffset) {
+            let currentRowAbove = targetRow - rowOffset;
+            let currentRowBelow = targetRow + rowOffset;
 
-        while (!foundSeats && (targetRow - rowOffset >= 1 || targetRow + rowOffset <= 24)) { // TODO: make 24 a variable
-            let seatsBelow = targetRow + rowOffset <= 24 ? getSeatsByPreference(targetRow + rowOffset) : [];
-            let seatsAbove = targetRow - rowOffset >= 1 ? getSeatsByPreference(targetRow - rowOffset) : [];
+            // Try to find a block of seats that fits the group size in one row
+            for (let block of seatBlocks) {
+                let seatsAbove = currentRowAbove >= 1 ? getSeatsByPreference(currentRowAbove, block) : [];
+                let seatsBelow = currentRowBelow <= 24 ? getSeatsByPreference(currentRowBelow, block) : [];
 
-            // Check if enough contiguous seats are available in either row
-            for (let seatsArray of [seatsBelow, seatsAbove]) {
-                if (seatsArray.length >= groupSize) {
-                    for (let i = 0; i < groupSize; i++) {
-                        assignedSeats.push(seatsArray[i]);
-                        seatsArray[i].isOccupied = true;
-                    }
-                    foundSeats = true;
-                    break;
+                if (seatsAbove.length === block.length) {
+                    seatsAbove.forEach(seat => seat.isOccupied = true);
+                    return seatsAbove;
+                } else if (seatsBelow.length === block.length) {
+                    seatsBelow.forEach(seat => seat.isOccupied = true);
+                    return seatsBelow;
                 }
             }
 
-            if (!foundSeats) rowOffset++;
+            rowOffset++;
         }
 
-        // If we can't find enough contiguous seats, we'll assign whatever we can find
-        if (!foundSeats) {
-            let attempts = 0;
-            while (assignedSeats.length < groupSize && attempts < this.seatLayout.length * seatPreference.length) {
-                let rowToTry = attempts % this.seatLayout.length + 1;
-                let seatsInRow = getSeatsByPreference(rowToTry);
-                if (seatsInRow.length > 0) {
-                    let seat = seatsInRow[0];
-                    assignedSeats.push(seat);
-                    seat.isOccupied = true;
-                    attempts += seatPreference.length - seatsInRow.indexOf(seat); // Skip to next row after finding a seat
-                } else {
-                    attempts += seatPreference.length; // Skip to next row if no seats are available
+        // If no preferred blocks are available, assign the first available seats
+        if (assignedSeats.length < groupSize) {
+            for (let row = 1; row <= 24 && assignedSeats.length < groupSize; row++) {
+                const availableSeats = this.seatLayout[row]?.filter(seat => !seat.isOccupied);
+                while (availableSeats?.length > 0 && assignedSeats?.length < groupSize) {
+                    let seat = availableSeats.shift();
+                    if (seat) {
+                        seat.isOccupied = true;
+                        assignedSeats.push(seat);
+                    }
                 }
             }
         }
 
         return assignedSeats;
     }
+
 
 
     ensureEveryPassengerHasASeat(passengers: Passenger[]): void {
