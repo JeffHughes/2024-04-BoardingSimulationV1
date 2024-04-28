@@ -7,16 +7,19 @@ type Seat = {
     isOccupied: boolean;
     passengerId?: number;
     groupID?: number;
+    orderAssigned?: number;
+
 };
 
 @Injectable({
     providedIn: 'root'
 })
 export class SeatService {
-    public  seatLayout: Seat[][];
+    public seatLayout: Seat[][];
 
     constructor() {
         this.seatLayout = this.initializeSeats();
+        console.log(this.seatLayout);
     }
 
     private initializeSeats(): Seat[][] {
@@ -36,18 +39,42 @@ export class SeatService {
 
     assignSeatsToPassengers(passengers: Passenger[]): Passenger[] {
 
-        for (let passenger of passengers) {
-            let seats = this.findClosestAvailableSeat(passenger.bin!, passenger.groupSize!);
-            for (let seat of seats) {
-                seat.isOccupied = true;
-                seat.passengerId = passenger.id;
-                seat.groupID = passenger.groupID;
+        let passengerGroups: { [groupID: number]: Passenger[] } = {};
+
+        // Group passengers by their groupID
+        passengers.forEach(passenger => {
+            if (!passengerGroups[passenger.groupID!]) {
+                passengerGroups[passenger.groupID!] = [];
             }
-            if (seats.length > 0) {
-                passenger.seat = seats.map(s => s.seat).join(",");
-                passenger.row = seats[0].row;
-            }
-        }
+            passengerGroups[passenger.groupID!].push(passenger);
+        });
+
+        let seatAssignmentIndex = 1;
+        // Process each group to assign seats
+        Object.values(passengerGroups).forEach(group => {
+            // Assuming the first passenger in the group has the correct bin and group size for all
+            let seats = this.findClosestAvailableSeat(group[0].bin!, group[0].slot!, group[0].groupSize!);
+
+            // Assign seats to each passenger in the group
+            group.forEach((passenger, index) => {
+                if (index < seats.length) { // Make sure we do not assign more passengers than seats available
+                    let seat = seats[index];
+                    const seatIndex = this.seatLayout[seat.row].findIndex(s => s.seat === seat.seat);
+
+                    // Update the seatLayout array directly with the new seat information
+                    this.seatLayout[seat.row][seatIndex].isOccupied = true;
+                    this.seatLayout[seat.row][seatIndex].passengerId = passenger.id;
+                    this.seatLayout[seat.row][seatIndex].groupID = passenger.groupID;
+                    this.seatLayout[seat.row][seatIndex].orderAssigned = seatAssignmentIndex++;
+
+                    // Set passenger's seat and row information
+                    passenger.seat = seat.seat;
+                    passenger.row = seat.row;
+                    passenger.seatRow = `${seat.row}${seat.seat}`;
+                }
+            });
+        });
+
         return passengers;
     }
 
@@ -55,34 +82,48 @@ export class SeatService {
 
     public findClosestAvailableSeat(bin: number, slot: number, groupSize: number): Seat[] {
 
+        const totalBins = 12; // TODO: make this a variable
         // First, we convert the bin to the actual row number
-        let invertBin = 13 - bin; // Since bin numbers are reverse-ordered
+        let invertBin = totalBins + 1 - bin; // Since bin numbers are reverse-ordered
 
         let targetRow = invertBin * 2; // Each bin corresponds to 2 rows
-        // TODO: figureout the actual ratio 
+        // TODO: figureout the actual ratio of bins to seats 
 
-            const seatPreference = slot > 7 ?
-                    ['F', 'A', 'D', 'E', 'E', 'B'] :
-            ['A', 'F', 'C', 'D', 'B', 'E']; 
+        const seatPreference = slot >= 7 ?
+            ['F', 'A', 'D', 'E', 'E', 'B'] :
+                ['A', 'F', 'C', 'D', 'B', 'E'];
+            
+            // if there are 6 members in the group
+            // we'll take ABCDEF, or ABC, ABC 2 rows, or  DEF, DEF as a first choice  
+            // 
+            // if there are 2 members in the group 
+            // AB, BC, DE, or EF are preferred
+            // 
+            // If there are 3 members ABC or DEF 
+            // 
+            // 4 members: ABC D, BC DE, or CDEF
+            // 
+            // 5 members: ABC DE, or BC DEF, or AB ABC, or DE DEF or BC ABC or EF DEF 
+            // 
+            // if you can't find one of the first choices, check the next row back before giving up
 
+        if (bin == 0) {
+            targetRow = 1;
+        }
 
-        // Helper function to get seats by preference for a given row
         const getSeatsByPreference = (row: number): Seat[] => {
             let availableSeats: Seat[] = [];
             for (let seatLetter of seatPreference) {
-                try {
-                    let seat = this.seatLayout[row].find(s => s.seat === seatLetter && !s.isOccupied);
-                    if (seat) availableSeats.push(seat);
-                } catch (error) { }
+                let seat = this.seatLayout[row]?.find(s => s.seat === seatLetter && !s.isOccupied);
+                if (seat) availableSeats.push(seat);
             }
             return availableSeats;
         };
 
         let assignedSeats: Seat[] = [];
-
-        // We need to check for contiguous seats, starting from the target row and moving outwards
         let rowOffset = 0;
         let foundSeats = false;
+
 
         while (!foundSeats && (targetRow - rowOffset >= 1 || targetRow + rowOffset <= 24)) { // TODO: make 24 a variable
             let seatsBelow = targetRow + rowOffset <= 24 ? getSeatsByPreference(targetRow + rowOffset) : [];
@@ -91,7 +132,6 @@ export class SeatService {
             // Check if enough contiguous seats are available in either row
             for (let seatsArray of [seatsBelow, seatsAbove]) {
                 if (seatsArray.length >= groupSize) {
-                    // Assign seats and mark as occupied
                     for (let i = 0; i < groupSize; i++) {
                         assignedSeats.push(seatsArray[i]);
                         seatsArray[i].isOccupied = true;
@@ -101,23 +141,23 @@ export class SeatService {
                 }
             }
 
-            // If not found, increase the offset to check the next set of rows
-            if (!foundSeats) {
-                rowOffset++;
-            }
+            if (!foundSeats) rowOffset++;
         }
 
         // If we can't find enough contiguous seats, we'll assign whatever we can find
         if (!foundSeats) {
             let attempts = 0;
-            while (assignedSeats.length < groupSize && attempts < 48) { // Each row has 6 seats, 24 rows in total
-                let rowToTry = attempts % 24 + 1;
+            while (assignedSeats.length < groupSize && attempts < this.seatLayout.length * seatPreference.length) {
+                let rowToTry = attempts % this.seatLayout.length + 1;
                 let seatsInRow = getSeatsByPreference(rowToTry);
                 if (seatsInRow.length > 0) {
-                    assignedSeats.push(seatsInRow[0]);
-                    seatsInRow[0].isOccupied = true;
+                    let seat = seatsInRow[0];
+                    assignedSeats.push(seat);
+                    seat.isOccupied = true;
+                    attempts += seatPreference.length - seatsInRow.indexOf(seat); // Skip to next row after finding a seat
+                } else {
+                    attempts += seatPreference.length; // Skip to next row if no seats are available
                 }
-                attempts++;
             }
         }
 

@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Passenger } from '../classes/passenger';
 
-type PassengerGroups = Record<number, Passenger[]>;
+ 
+interface PassengerGroups {
+  [key: string]: Passenger[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -42,5 +45,49 @@ export class ConsoleService {
     }
   }
 
+
+  displaySeatLayoutConsoleTable(seatLayout: any): void {
+    const tableFormat = seatLayout.map((row: any, rowIndex: any) => {
+      const rowObject: { [seatLabel: string]: number | 'Empty' } = {};
+      row.forEach((item: any) => {
+        rowObject[item.seat] = item.isOccupied && item.passengerId ? item.passengerId.toString() : 'Empty';
+      });
+      return rowObject;
+    });
+    console.log('Seat Layout:');
+    console.table(tableFormat);
+  }
+  
+  displaySeatAssignmentOrderConsoleTable(seatLayout: any): void {
+    const tableFormat = seatLayout.map((row: any, rowIndex: any) => {
+      const rowObject: { [seatLabel: string]: number | 'Empty' } = {};
+      row.forEach((item: any) => {
+        rowObject[item.seat] = item.isOccupied && item.passengerId ?  item.orderAssigned.toString() : 'Empty';
+      });
+      return rowObject;
+    });
+    console.log('Seat Layout:');
+    console.table(tableFormat);
+  }
+
+  
+
+  printBoardingGroupWSeatsTable(passengers: Passenger[]): void {
+    const groups: PassengerGroups = passengers.reduce((acc: PassengerGroups, passenger: Passenger) => {
+      const groupKey = passenger.boardingGroupLetter!;
+      acc[groupKey] = acc[groupKey] || [];
+      acc[groupKey].push(passenger);
+      return acc;
+    }, {});
+
+    for (const [groupNumber, group] of Object.entries(groups)) {
+      console.log(`Boarding Group ${groupNumber}:`);
+      group.sort((a: Passenger, b: Passenger) => a.boardingOrder! - b.boardingOrder!);
+      console.table(group.map(passenger => ({
+        ...passenger,
+        seatRow: passenger.seatRow
+      })), ["boardingGroupLetter", "boardingOrder", "id", "groupID", "groupSize", "bin", "slot", "hasCarryOn", "seatRow"]);
+    }
+  }
 
 }

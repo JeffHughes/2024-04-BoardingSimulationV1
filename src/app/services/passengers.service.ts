@@ -1,3 +1,4 @@
+import { ConsoleService } from './console.service';
 import { SeatService } from './seat.service';
 import { Injectable, inject, signal } from '@angular/core';
 import { Passenger } from '../classes/passenger';
@@ -23,6 +24,7 @@ export class PassengersService {
   overheadBinService = inject(OverheadBinsService);
   seatService = inject(SeatService);
   gateService = inject(GateService)
+  consoleService = inject(ConsoleService);
 
   passengers = signal<any[]>([{}]);
 
@@ -34,27 +36,30 @@ export class PassengersService {
     const config: any = await this.configService.get();
     const length = config.maxPassengers;
 
-    let passengersBinAssigned: Passenger[] = Array.from({ length }, (v, i) => ({
+    let passengers: Passenger[] = Array.from({ length }, (v, i) => ({
       id: i + 1,
       // name: `${i + 1}`,
     }));
 
-    const groupInfo = this.groupService.distributePassengersIntoGroups(passengersBinAssigned, false, false);
+    const groupInfo = this.groupService.distributePassengersIntoGroups(passengers, false, false);
     console.log({ groupInfo })
 
-    passengersBinAssigned = this.overheadBinService.assignPassengerBins(
+    passengers = this.overheadBinService.assignPassengerBins(
       groupInfo.passengers,
       groupInfo.groups,
       config.overheadBinRows, 12);
 
     //console.log({ passengersBinAssigned })
 
-    const gateAssignments = this.gateService.assignBoardingGroups(passengersBinAssigned);
+    const gateAssignments = this.gateService.assignBoardingGroups(passengers);
 
-    
     const seats = this.seatService.assignSeatsToPassengers(gateAssignments);
 
     console.log({ seats })
+
+    this.consoleService.displaySeatLayoutConsoleTable(this.seatService.seatLayout);
+
+    this.consoleService.printBoardingGroupWSeatsTable(seats);
     // console.log({ gateAssignments })
 
     // passengers = this.seatService.sortBySlot([...passengers], config.seatRows);

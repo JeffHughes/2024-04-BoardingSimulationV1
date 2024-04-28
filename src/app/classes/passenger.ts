@@ -13,7 +13,14 @@ export class Passenger {
     seat?: string;
     row?: number;
 
-    constructor(id: number) {
+    seatRow?: string;
+
+
+    constructor(id: number, name: string, groupID: number, groupSize: number) {
         this.id = id;
+        this.name = name;
+        this.groupID = groupID;
+        this.groupSize = groupSize;
     }
+
 }
