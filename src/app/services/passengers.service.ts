@@ -60,6 +60,11 @@ export class PassengersService {
     this.consoleService.displaySeatLayoutConsoleTable(this.seatService.seatLayout);
 
     this.consoleService.printBoardingGroupWSeatsTable(seats);
+
+
+    this.seatService.ensureEveryPassengerHasASeat(passengers); // Make sure everyone has a seat
+    this.seatService.logSeatAssignments(passengers);
+
     // console.log({ gateAssignments })
 
     // passengers = this.seatService.sortBySlot([...passengers], config.seatRows);

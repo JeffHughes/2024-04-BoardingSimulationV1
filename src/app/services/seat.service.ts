@@ -23,18 +23,18 @@ export class SeatService {
     }
 
     private initializeSeats(): Seat[][] {
-        let layout: Seat[][] = [];
-        for (let row = 1; row <= 24; row++) {
-            layout[row] = [];
-            for (let seat of ['A', 'B', 'C', 'D', 'E', 'F']) {
-                layout[row].push({
-                    row: row,
-                    seat: seat,
-                    isOccupied: false
-                });
+            let layout: Seat[][] = [];
+            for (let row = 0; row < 24; row++) {
+                layout.push([]);
+                for (let seat of ['A', 'B', 'C', 'D', 'E', 'F']) {
+                    layout[row].push({
+                        row: row + 1, // Add 1 to keep the row numbering starting at 1
+                        seat: seat,
+                        isOccupied: false
+                    });
+                }
             }
-        }
-        return layout;
+            return layout;
     }
 
     assignSeatsToPassengers(passengers: Passenger[]): Passenger[] {
@@ -91,21 +91,21 @@ export class SeatService {
 
         const seatPreference = slot >= 7 ?
             ['F', 'A', 'D', 'E', 'E', 'B'] :
-                ['A', 'F', 'C', 'D', 'B', 'E'];
-            
-            // if there are 6 members in the group
-            // we'll take ABCDEF, or ABC, ABC 2 rows, or  DEF, DEF as a first choice  
-            // 
-            // if there are 2 members in the group 
-            // AB, BC, DE, or EF are preferred
-            // 
-            // If there are 3 members ABC or DEF 
-            // 
-            // 4 members: ABC D, BC DE, or CDEF
-            // 
-            // 5 members: ABC DE, or BC DEF, or AB ABC, or DE DEF or BC ABC or EF DEF 
-            // 
-            // if you can't find one of the first choices, check the next row back before giving up
+            ['A', 'F', 'C', 'D', 'B', 'E'];
+
+        // if there are 6 members in the group
+        // we'll take ABCDEF, or ABC, ABC 2 rows, or  DEF, DEF as a first choice  
+        // 
+        // if there are 2 members in the group 
+        // AB, BC, DE, or EF are preferred
+        // 
+        // If there are 3 members ABC or DEF 
+        // 
+        // 4 members: ABC D, BC DE, or CDEF
+        // 
+        // 5 members: ABC DE, or BC DEF, or AB ABC, or DE DEF or BC ABC or EF DEF 
+        // 
+        // if you can't find one of the first choices, check the next row back before giving up
 
         if (bin == 0) {
             targetRow = 1;
@@ -165,7 +165,52 @@ export class SeatService {
     }
 
 
+    ensureEveryPassengerHasASeat(passengers: Passenger[]): void {
+            passengers.forEach(passenger => {
+                if (!passenger.seat) {
+                    // If the passenger doesn't have a seat, find the first available seat
+                    for (let i = 0; i < this.seatLayout.length; i++) { // Use index-based loop
+                        for (let j = 0; j < this.seatLayout[i].length; j++) { // Inner loop over the seats
+                            let seat = this.seatLayout[i][j];
+                            if (!seat.isOccupied) {
+                                // Assign the seat to the passenger
+                                seat.isOccupied = true;
+                                seat.passengerId = passenger.id;
+                                seat.groupID = passenger.groupID;
+                                passenger.seat = seat.seat;
+                                passenger.row = seat.row;
+                                return; // Exit the function since we've assigned a seat
+                            }
+                        }
+                    }
+                }
+            });
+    }
 
+    // Call this method to log total available and assigned seats
+    logSeatAssignments(passengers: Passenger[]): void {
+        let totalSeats = 0;
+        let assignedSeats = 0;
+        let totalPassengers = passengers.length;
+        this.seatLayout.forEach(row => {
+            row.forEach(seat => {
+                totalSeats++;
+                if (seat.isOccupied) assignedSeats++;
+            });
+        });
+        console.log(`Total seats: ${totalSeats}`);
+        console.log(`Assigned seats: ${assignedSeats}`);
+        console.log(`Unassigned seats: ${totalSeats - assignedSeats}`);
+        console.log(`Total passengers: ${totalPassengers}`);
+        console.log(`Percentage of passengers with assigned seats: ${(assignedSeats / totalPassengers * 100).toFixed(2)}%`);
+
+
+        // if not 100% of seats assigned, show a big error 
+        if (assignedSeats !== totalPassengers) {
+            console.error('ERROR: Not all passengers have been assigned a seat!');
+        }
+
+    }
 
 
 
