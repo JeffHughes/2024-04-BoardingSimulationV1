@@ -49,11 +49,13 @@ export class SeatService {
             passengerGroups[passenger.groupID!].push(passenger);
         });
 
+        console.log('Passenger Groups:', passengerGroups)
+
         let seatAssignmentIndex = 1;
         // Process each group to assign seats
         Object.values(passengerGroups).forEach(group => {
             // Assuming the first passenger in the group has the correct bin and group size for all
-            let seats = this.findClosestAvailableSeat(group[0].bin!, group[0].slot!, group[0].groupSize!);
+            let seats = this.findClosestAvailableSeat(group);
 
             // Assign seats to each passenger in the group
             group.forEach((passenger, index) => {
@@ -77,6 +79,7 @@ export class SeatService {
                     } else {
                         // Log an error or handle the case where the seat is not found
                         console.error(`Seat not found: row ${seat.row}, seat ${seat.seat}`);
+                        console.log('Seats:', seats);
                     }
                 }
             });
@@ -116,7 +119,7 @@ export class SeatService {
     getSeatBlocks(groupSize: number): string[][] {
         switch (groupSize) {
             case 1:
-                return [['A', 'F', 'D', 'C'], ['B', 'E']];  // Priority for singles
+                return [['A'], ['F'], ['D'], ['C'], ['B'], ['E']];
             case 2:
                 return [['A', 'B'], ['B', 'C'], ['D', 'E'], ['E', 'F']];
             case 3:
@@ -132,12 +135,18 @@ export class SeatService {
         }
     }
 
-    public findClosestAvailableSeat(bin: number, slot: number, groupSize: number): Seat[] {
+    public findClosestAvailableSeat(group: Passenger[]): Seat[] {
+
+        let bin: number = group[0].bin!;
+        let slot: number = group[0].slot!;
+        let groupSize: number = group[0].groupSize!;
+
         // Constants and initialization
         const totalBins = 12;
-        const maxRowOffset = 6;
+        const maxRowOffset = 24;
+
         let invertBin = totalBins + 1 - bin;
-        let stdTargetRow = invertBin * 2 - 1;
+        let stdTargetRow = invertBin * 2 - 1; // todo: check actual ratio 
         let targetRow = (bin === 0 || slot === 0) ? 0 : stdTargetRow;
 
         // Preferred seat blocks setup
@@ -205,153 +214,6 @@ export class SeatService {
         return remainingSeats;
     }
 
-
-
-
-
-
-
-
-    public findClosestAvailableSeat3(bin: number, slot: number, groupSize: number): Seat[] {
-        const totalBins = 12; // TODO: make this a variable
-        const maxRowOffset = 6; // Maximum number of rows to search up or down
-
-        let invertBin = totalBins + 1 - bin; // Since bin numbers are reverse-ordered
-        let stdTargetRow = invertBin * 2 - 1; // Each bin corresponds to 2 rows
-
-        let targetRow = (bin === 0 || slot === 0) ? 0 : stdTargetRow; // Convert to zero-based index
-
-        // Define preferred seat blocks for different group sizes
-        const seatBlocks = {
-            1: [['A', 'F', 'D', 'C'], ['B', 'E']], // Priority for singles
-            2: [['A', 'B'], ['B', 'C'], ['D', 'E'], ['E', 'F']],
-            3: [['A', 'B', 'C'], ['D', 'E', 'F']],
-            4: [['A', 'B', 'C', 'D'], ['B', 'C', 'D', 'E'], ['C', 'D', 'E', 'F']],
-            5: [['A', 'B', 'C', 'D', 'E'], ['B', 'C', 'D', 'E', 'F']],
-            6: [['A', 'B', 'C', 'D', 'E', 'F']]
-        }[groupSize] || [['A'], ['F'], ['C'], ['D'], ['B'], ['E']]; // Default to single seats if no specific block matches
-
-        const getSeatsByPreference = (row: number, block: string[]): Seat[] => {
-            if (row < 0 || row >= this.seatLayout.length) return []; // Guard against invalid row index
-            return block.map(seatLetter => {
-                let seatIndex = this.seatLayout[row].findIndex(s => s.seat === seatLetter && !s.isOccupied);
-                return seatIndex !== -1 ? this.seatLayout[row][seatIndex] : null;
-            }).filter(s => s !== null) as Seat[];
-        };
-
-        let assignedSeats: Seat[] = [];
-        let rowOffset = 0;
-
-        // Try to find seats according to preference for the group size
-        while (rowOffset <= maxRowOffset && assignedSeats.length < groupSize) {
-            let currentRows = [];
-            if (targetRow - rowOffset >= 0) currentRows.push(targetRow - rowOffset);
-            if (targetRow + rowOffset < this.seatLayout.length) currentRows.push(targetRow + rowOffset);
-
-            for (let row of currentRows) {
-                for (let block of seatBlocks) {
-                    let availableSeats = getSeatsByPreference(row, block);
-                    if (availableSeats.length === block.length) {
-                        assignedSeats.push(...availableSeats);
-                        assignedSeats.forEach(seat => seat.isOccupied = true);
-                        break;
-                    }
-                }
-                if (assignedSeats.length === groupSize) break;
-            }
-            if (assignedSeats.length < groupSize) rowOffset++;
-        }
-
-        // If no preferred blocks are available, assign the first available seats
-        if (assignedSeats.length < groupSize) {
-            for (let row = 0; row < this.seatLayout.length && assignedSeats.length < groupSize; row++) {
-                let availableSeats = this.seatLayout[row].filter(seat => !seat.isOccupied);
-                while (availableSeats.length > 0 && assignedSeats.length < groupSize) {
-                    let seat = availableSeats.shift();
-                    if (seat) {
-                        seat.isOccupied = true;
-                        assignedSeats.push(seat);
-                    }
-                }
-            }
-        }
-
-        return assignedSeats;
-    }
-
-
-    public findClosestAvailableSeat2(bin: number, slot: number, groupSize: number): Seat[] {
-        const totalBins = 12; // TODO: make this a variable
-        const maxRowOffset = 6; // Maximum number of rows to search up or down
-
-        let invertBin = totalBins + 1 - bin; // Since bin numbers are reverse-ordered
-        let stdTargetRow = invertBin * 2 - 1; // Each bin corresponds to 2 rows
-
-        let targetRow = (bin === 0 || slot === 0) ? 0 : stdTargetRow; // Convert to zero-based index
-
-        const seatBlocks = {
-            1: [['A', 'F', 'D', 'C'], ['B', 'E']], // Priority for singles
-            2: [['A', 'B'], ['B', 'C'], ['D', 'E'], ['E', 'F']],
-            3: [['A', 'B', 'C'], ['D', 'E', 'F']],
-            4: [['A', 'B', 'C', 'D'], ['B', 'C', 'D', 'E'], ['C', 'D', 'E', 'F']],
-            5: [['A', 'B', 'C', 'D', 'E'], ['B', 'C', 'D', 'E', 'F']],
-            6: [['A', 'B', 'C', 'D', 'E', 'F']]
-        }[groupSize];
-
-        const getSeatsByPreference = (row: number, preferences: string[]): Seat[] => {
-            if (row < 0 || row >= this.seatLayout.length) return []; // Guard against invalid row index
-            let availableSeats: Seat[] = [];
-            preferences.forEach((block: any) => {
-                let seats = block.map((seatLetter: any) => {
-                    let seatIndex = this.seatLayout[row].findIndex(s => s.seat === seatLetter && !s.isOccupied);
-                    return seatIndex !== -1 ? this.seatLayout[row][seatIndex] : null;
-                }).filter((s: any) => s !== null);
-                if (seats.length === block.length) {
-                    availableSeats.push(...seats);
-                }
-            });
-            return availableSeats;
-        };
-
-        let assignedSeats: Seat[] = [];
-        let rowOffset = 0;
-
-        while (rowOffset <= maxRowOffset && assignedSeats.length < groupSize) {
-            let currentRows = [];
-            if (targetRow - rowOffset >= 0) currentRows.push(targetRow - rowOffset);
-            if (targetRow + rowOffset < this.seatLayout.length) currentRows.push(targetRow + rowOffset);
-
-            for (let row of currentRows) {
-                for (let preference of seatBlocks!) {
-                    let availableSeats = getSeatsByPreference(row, preference);
-                    if (availableSeats.length === groupSize) {
-                        assignedSeats.push(...availableSeats);
-                        assignedSeats.forEach(seat => seat.isOccupied = true);
-                        break;
-                    }
-                }
-                if (assignedSeats.length === groupSize) break;
-            }
-            if (assignedSeats.length < groupSize) rowOffset++;
-        }
-
-        if (assignedSeats.length < groupSize) {
-            for (let row = 0; row < this.seatLayout.length && assignedSeats.length < groupSize; row++) {
-                let availableSeats = this.seatLayout[row].filter(seat => !seat.isOccupied);
-                while (availableSeats.length > 0 && assignedSeats.length < groupSize) {
-                    let seat = availableSeats.shift();
-                    if (seat) {
-                        seat.isOccupied = true;
-                        assignedSeats.push(seat);
-                    }
-                }
-            }
-        }
-
-        return assignedSeats;
-    }
-
-
     ensureEveryPassengerHasASeat(passengers: Passenger[]): void {
         passengers.forEach(passenger => {
             if (!passenger.seat) {
@@ -374,33 +236,34 @@ export class SeatService {
         });
     }
 
-    // Call this method to log total available and assigned seats
     logSeatAssignments(passengers: Passenger[]): void {
-        let totalSeats = 0;
-        let assignedSeats = 0;
-        this.seatLayout.forEach(row => {
-            totalSeats += row.length;
-            assignedSeats += row.filter(seat => seat.isOccupied).length;
-        });
+        const totalSeats = this.getTotalSeats();
+        const assignedSeats = this.getAssignedSeatCount();
         const unassignedSeats = totalSeats - assignedSeats;
         const totalPassengers = passengers.length;
         const unassignedPassengers = passengers.filter(p => !p.seat).length;
+        const percentageOfPassengersWithAssignedSeats = (assignedSeats / totalPassengers * 100).toFixed(2);
 
         console.log(`Total seats: ${totalSeats}`);
         console.log(`Assigned seats: ${assignedSeats}`);
         console.log(`Unassigned seats: ${unassignedSeats}`);
         console.log(`Total passengers: ${totalPassengers}`);
         console.log(`Unassigned passengers: ${unassignedPassengers}`);
-        console.log(`Percentage of passengers with assigned seats: ${(assignedSeats / totalPassengers * 100).toFixed(2)}%`);
-
-        // if not 100% of seats assigned, show a big error 
-        if (assignedSeats !== totalPassengers) {
-            console.error('ERROR: Not all passengers have been assigned a seat!');
-        }
-
+        console.log(`Percentage of passengers with assigned seats: ${percentageOfPassengersWithAssignedSeats}%`);
     }
 
+    getTotalSeats(): number {
+        let totalSeats = 0;
+        this.seatLayout.forEach(row => totalSeats += row.length);
+        return totalSeats;
+    }
 
-
+    getAssignedSeatCount(): number {
+        let assignedSeats = 0;
+        this.seatLayout.forEach(row => {
+            assignedSeats += row.filter(seat => seat.isOccupied).length;
+        });
+        return assignedSeats;
+    }
 
 }
