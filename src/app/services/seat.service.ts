@@ -23,18 +23,18 @@ export class SeatService {
     }
 
     private initializeSeats(): Seat[][] {
-            let layout: Seat[][] = [];
-            for (let row = 0; row < 24; row++) {
-                layout.push([]);
-                for (let seat of ['A', 'B', 'C', 'D', 'E', 'F']) {
-                    layout[row].push({
-                        row: row + 1, // Add 1 to keep the row numbering starting at 1
-                        seat: seat,
-                        isOccupied: false
-                    });
-                }
+        let layout: Seat[][] = [];
+        for (let row = 0; row < 24; row++) {
+            layout.push([]);
+            for (let seat of ['A', 'B', 'C', 'D', 'E', 'F']) {
+                layout[row].push({
+                    row: row + 1, // Add 1 to keep the row numbering starting at 1
+                    seat: seat,
+                    isOccupied: false
+                });
             }
-            return layout;
+        }
+        return layout;
     }
 
     assignSeatsToPassengers(passengers: Passenger[]): Passenger[] {
@@ -59,23 +59,58 @@ export class SeatService {
             group.forEach((passenger, index) => {
                 if (index < seats.length) { // Make sure we do not assign more passengers than seats available
                     let seat = seats[index];
-                    const seatIndex = this.seatLayout[seat.row].findIndex(s => s.seat === seat.seat);
+                    const seatRowIndex = seat.row - 1; // Adjust for zero-based array index
+                    const seatIndex = this.seatLayout[seatRowIndex].findIndex(s => s.seat === seat.seat);
 
-                    // Update the seatLayout array directly with the new seat information
-                    this.seatLayout[seat.row][seatIndex].isOccupied = true;
-                    this.seatLayout[seat.row][seatIndex].passengerId = passenger.id;
-                    this.seatLayout[seat.row][seatIndex].groupID = passenger.groupID;
-                    this.seatLayout[seat.row][seatIndex].orderAssigned = seatAssignmentIndex++;
+                    // Verify that the seat was found before trying to assign it
+                    if (seatIndex !== -1) {
+                        // Update the seatLayout array directly with the new seat information
+                        this.seatLayout[seatRowIndex][seatIndex].isOccupied = true;
+                        this.seatLayout[seatRowIndex][seatIndex].passengerId = passenger.id;
+                        this.seatLayout[seatRowIndex][seatIndex].groupID = passenger.groupID;
+                        this.seatLayout[seatRowIndex][seatIndex].orderAssigned = seatAssignmentIndex++;
 
-                    // Set passenger's seat and row information
-                    passenger.seat = seat.seat;
-                    passenger.row = seat.row;
-                    passenger.seatRow = `${seat.row}${seat.seat}`;
+                        // Set passenger's seat and row information
+                        passenger.seat = seat.seat;
+                        passenger.row = seat.row;
+                        passenger.seatRow = `${seat.row}${seat.seat}`;
+                    } else {
+                        // Log an error or handle the case where the seat is not found
+                        console.error(`Seat not found: row ${seat.row}, seat ${seat.seat}`);
+                    }
                 }
             });
         });
 
-        return passengers;
+            
+            let availableSeats: Seat[] = [];
+            this.seatLayout.forEach(row => {
+                row.forEach(seat => {
+                    if (!seat.isOccupied) {
+                        availableSeats.push(seat);
+                    }
+                });
+            });
+
+            // Final pass to ensure every passenger has a seat using the list of available seats
+            passengers.forEach(passenger => {
+                if (!passenger.seat) {
+                    if (availableSeats.length > 0) {
+                        const seat = availableSeats.shift()!; // Take the first available seat
+                        seat.isOccupied = true;
+                        seat.passengerId = passenger.id;
+                        seat.groupID = passenger.groupID;
+
+                        passenger.seat = seat.seat;
+                        passenger.row = seat.row;
+                        passenger.seatRow = `${seat.row}${seat.seat}`;
+                    } else {
+                        console.error(`No available seats left for passenger ID: ${passenger.id}`);
+                    }
+                }
+            });
+
+            return passengers;
     }
 
 
@@ -166,44 +201,45 @@ export class SeatService {
 
 
     ensureEveryPassengerHasASeat(passengers: Passenger[]): void {
-            passengers.forEach(passenger => {
-                if (!passenger.seat) {
-                    // If the passenger doesn't have a seat, find the first available seat
-                    for (let i = 0; i < this.seatLayout.length; i++) { // Use index-based loop
-                        for (let j = 0; j < this.seatLayout[i].length; j++) { // Inner loop over the seats
-                            let seat = this.seatLayout[i][j];
-                            if (!seat.isOccupied) {
-                                // Assign the seat to the passenger
-                                seat.isOccupied = true;
-                                seat.passengerId = passenger.id;
-                                seat.groupID = passenger.groupID;
-                                passenger.seat = seat.seat;
-                                passenger.row = seat.row;
-                                return; // Exit the function since we've assigned a seat
-                            }
+        passengers.forEach(passenger => {
+            if (!passenger.seat) {
+                // If the passenger doesn't have a seat, find the first available seat
+                for (let i = 0; i < this.seatLayout.length; i++) { // Use index-based loop
+                    for (let j = 0; j < this.seatLayout[i].length; j++) { // Inner loop over the seats
+                        let seat = this.seatLayout[i][j];
+                        if (!seat.isOccupied) {
+                            // Assign the seat to the passenger
+                            seat.isOccupied = true;
+                            seat.passengerId = passenger.id;
+                            seat.groupID = passenger.groupID;
+                            passenger.seat = seat.seat;
+                            passenger.row = seat.row;
+                            return; // Exit the function since we've assigned a seat
                         }
                     }
                 }
-            });
+            }
+        });
     }
 
     // Call this method to log total available and assigned seats
     logSeatAssignments(passengers: Passenger[]): void {
         let totalSeats = 0;
         let assignedSeats = 0;
-        let totalPassengers = passengers.length;
         this.seatLayout.forEach(row => {
-            row.forEach(seat => {
-                totalSeats++;
-                if (seat.isOccupied) assignedSeats++;
-            });
+            totalSeats += row.length;
+            assignedSeats += row.filter(seat => seat.isOccupied).length;
         });
+        const unassignedSeats = totalSeats - assignedSeats;
+        const totalPassengers = passengers.length;
+        const unassignedPassengers = passengers.filter(p => !p.seat).length;
+
         console.log(`Total seats: ${totalSeats}`);
         console.log(`Assigned seats: ${assignedSeats}`);
-        console.log(`Unassigned seats: ${totalSeats - assignedSeats}`);
+        console.log(`Unassigned seats: ${unassignedSeats}`);
         console.log(`Total passengers: ${totalPassengers}`);
+        console.log(`Unassigned passengers: ${unassignedPassengers}`);
         console.log(`Percentage of passengers with assigned seats: ${(assignedSeats / totalPassengers * 100).toFixed(2)}%`);
-
 
         // if not 100% of seats assigned, show a big error 
         if (assignedSeats !== totalPassengers) {
