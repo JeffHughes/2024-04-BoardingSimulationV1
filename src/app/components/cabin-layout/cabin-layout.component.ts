@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { ConfigService } from '../../services/config.service';
 import { CommonModule } from '@angular/common';
+import { PassengersService } from '../../services/passengers.service';
 
 
 @Component({
@@ -15,32 +16,20 @@ import { CommonModule } from '@angular/common';
 export class CabinLayoutComponent {
 
   public configService = inject(ConfigService);
+  passengersService = inject(PassengersService)
 
   getSeatID(row: any, letter: string) {
-    let ID = `seat-${row}-letter`;
-
-    // if (!this.layout.layoutSquares[ID]) {
-    //   setTimeout(() => {
-    //     let item = document.getElementById(ID);
-    //     let boundingRect = item!.getBoundingClientRect();
-    //     this.layout.layoutSquares[ID] = boundingRect;
-    //   }, 1000);
-    // }
-
+    let ID = `seat-${row}-${letter}`;  
     return ID;
   }
 
-  getID(row: any, letter: string = 'A') {
-    let ID = `seat-${row}-letter`;
+  getRowID(row: any, ) {
+    let ID = `cabin-row-${row}`; 
+    return ID;
+  }
 
-    // if (!this.layout.layoutSquares[ID]) {
-    //   setTimeout(() => {
-    //     let item = document.getElementById(ID);
-    //     let boundingRect = item!.getBoundingClientRect();
-    //     this.layout.layoutSquares[ID] = boundingRect;
-    //   }, 1000);
-    // }
-
+  getBinID(binID: any, location  = 'top') {
+    let ID = `bin-${location}-${binID}`;  
     return ID;
   }
 

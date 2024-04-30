@@ -14,7 +14,7 @@ export class ConfigService {
       "seatRows": 24, // maxPassengers / 6
       "overheadBinRows": 12, // seatRows / 2
 
-      "cabinLengthMeters": 30,
+      "cabinLengthMeters": 24,
     }
 
   )

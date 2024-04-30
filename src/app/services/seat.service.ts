@@ -146,11 +146,13 @@ export class SeatService {
         const maxRowOffset = 24;
 
         let invertBin = totalBins + 1 - bin;
-        let stdTargetRow = invertBin * 2 - 1; // todo: check actual ratio 
+        let stdTargetRow = invertBin - 1; // todo: check actual ratio 
         let targetRow = (bin === 0 || slot === 0) ? 0 : stdTargetRow;
+        // let targetRow = (bin - 1) * 2; // Adjust for zero-based indexing if needed
+
 
         // Preferred seat blocks setup
-        const seatBlocks = this.getSeatBlocks(groupSize); // Assuming this returns an array of seat preference arrays.
+        let seatBlocks = this.getSeatBlocks(groupSize); // Assuming this returns an array of seat preference arrays.
 
         let assignedSeats: Seat[] = [];
         let rowOffset = 0;
@@ -167,6 +169,43 @@ export class SeatService {
         if (assignedSeats.length < groupSize) {
             assignedSeats = [...assignedSeats, ...this.assignRemainingSeats(groupSize - assignedSeats.length)];
         }
+
+        // flatten seatBlocks
+        // const seatBlocksFlat = seatBlocks.reduce((acc, val) => acc.concat(val), []);
+
+        // // Find seats within row offset limits
+        // while (rowOffset <= maxRowOffset && assignedSeats.length < groupSize) {
+        //  let currentRows = this.getCurrentRows(targetRow, rowOffset);
+
+        //  for (let row of currentRows) {
+        //      let seats = this.getSeatsByPreference(row, seatBlocksFlat);
+
+        //      if (seats.length >= groupSize) {
+        //          // If we found enough seats, mark them as occupied and break out
+        //          seats.forEach(seat => seat.isOccupied = true);
+        //          assignedSeats = seats;
+        //          break;
+        //      }
+        //  }
+
+        //  if (assignedSeats.length >= groupSize) break;
+        //  rowOffset++;
+        // }
+
+        // If the group couldn't be placed together, find the best possible seats for remaining members
+        if (assignedSeats.length < groupSize) {
+            let remainingSeatsNeeded = groupSize - assignedSeats.length;
+            for (let i = 0; i < this.seatLayout.length && remainingSeatsNeeded > 0; i++) {
+                let availableSeatsInRow = this.seatLayout[i].filter(seat => !seat.isOccupied);
+                let seatsToAssign = availableSeatsInRow.slice(0, remainingSeatsNeeded);
+                seatsToAssign.forEach(seat => {
+                    seat.isOccupied = true;
+                    assignedSeats.push(seat);
+                });
+                remainingSeatsNeeded -= seatsToAssign.length;
+            }
+        }
+
 
         return assignedSeats;
     }

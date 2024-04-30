@@ -1,23 +1,25 @@
-<table style="width: 100%">
-  <tr>
-    @for (order of walkwayOrderReverse(); track $index) {
-    <td
-      [id]="getID(order)"
-      style="
-        border: 1px solid black;
-        width: 50px;
-        height: 50px;
-        text-align: center;
-        vertical-align: middle;
-      "
-    >
-      {{ order }}
-    </td>
-    }
-  </tr>
-</table>
+<div style="position: relative">
+  <table style="width: 100%">
+    <tr>
+      @for (order of walkwayOrderReverse(); track $index) {
+      <td
+        [id]="getID(order)"
+        style="
+          border: 1px solid black;
+          width: 50px;
+          height: 50px;
+          text-align: center;
+          vertical-align: middle;
+        "
+      >
+        <!-- {{ order }} -->
+        &lt;
+      </td>
+      }
+    </tr>
+  </table>
 
-<!-- <table style="width: 100%">
+  <!-- <table style="width: 100%">
   <tr>
     @for (order of walkwayOrder(); track $index) {
     <td
@@ -35,3 +37,67 @@
     }
   </tr>
 </table> -->
+
+  <div style="position: relative">
+    <div
+      style="
+        position: absolute;
+        top: -70px;
+        right: -120px;
+
+        outline: 1px solid firebrick;
+        width: 100px;
+        height: 100px;
+        background-color: rgba(0, 0, 0, 0.1);
+      "
+      id="walkway-standby"
+    ></div>
+
+    <div
+      style="
+        position: absolute;
+        top: -70px;
+        left: -150px;
+
+        width: 100px;
+        height: 100px;
+        background-color: rgba(0, 0, 0, 0.1);
+      "
+      id="walkway-complete"
+    ></div>
+  </div>
+</div>
+
+@for (passenger of passengersService.passengers(); track $index) {
+
+<div
+  style="
+    position: absolute;
+    width: 20px;
+
+    top: 100px;
+    aspect-ratio: 1;
+
+    opacity: 0;
+  "
+  [id]="'walkway-passenger-' + passenger.id"
+>
+  <div
+    style="
+      width: 20px;
+      aspect-ratio: 1;
+      top: -110px;
+      left: -10px;
+      position: absolute;
+      background-color: rgb(233, 233, 233);
+      border: 1px solid black;
+
+      text-align: center;
+      vertical-align: center;
+      border-radius: 100%;
+    "
+  >
+    {{ passenger.id }}
+  </div>
+</div>
+}

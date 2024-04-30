@@ -24,9 +24,9 @@ export class PassengersAtGateComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
 
-    setTimeout(() => {
-      this.passengersService.animateCircle('passenger-1', 'gate-A-16', 'gate-A-8');
-    }, 2000);
+    // setTimeout(() => {
+    //   this.passengersService.animateCircle('passenger-1', 'gate-A-16', 'gate-A-8');
+    // }, 2000);
 
 
   }

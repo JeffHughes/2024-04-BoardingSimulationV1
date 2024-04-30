@@ -83,7 +83,7 @@ export class OverheadBinsService {
       // fill in w singles
       // look at all the bins one at a time, add singles until 12
       // then move to the next bin 
-      for (let bin = 1; bin <= totalBins; bin++) {
+      for (let bin =  totalBins; bin >= 1 ; bin--) {
         let binSlots = bins[bin].length;
         while (binSlots < slotsPerBin) {
           let passenger = remaining.find(p => !p.slot && !p.bin);

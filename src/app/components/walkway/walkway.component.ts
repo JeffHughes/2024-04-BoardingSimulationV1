@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { PassengersService } from '../../services/passengers.service';
 
 @Component({
   selector: 'app-walkway',
@@ -8,7 +9,7 @@ import { Component } from '@angular/core';
   styleUrl: './walkway.component.scss'
 })
 export class WalkwayComponent {
-
+  passengersService = inject(PassengersService)
 
   walkwayOrder() {
     return Array.from({ length: 20 }, (v, k) => k + 1) ;
